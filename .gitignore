@@ -1,0 +1,13 @@
+# Poetry
+.venv/
+poetry.lock
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDEs
+.vscode/
+.idea/
