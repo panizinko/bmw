@@ -9,24 +9,47 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi (>=0.115.12,<0.116.0)",
-    "uvicorn (>=0.34.3,<0.35.0)"
+    "uvicorn (>=0.34.3,<0.35.0)",
+    "passlib[bcrypt] (>=1.7.4,<2.0.0)",
+    "email-validator (>=2.2.0,<3.0.0)"
 ]
 
 [tool.poetry]
 packages = [{include = "fastapi_service", from = "src"}]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+mypy_path = "src"
+
+[tool.ruff]
+src = ["src"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.poe.tasks]
+test = "pytest"
+lint = "ruff check ."
+format = "ruff format ."
+
+[tool.poe.tasks.dev]
+cmd = "uvicorn fastapi_service.main:app --reload"
+cwd = "src"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.0"
 mypy = "^1.16.0"
 httpx = "^0.28.1"
+ruff = "^0.11.13"
+poethepoet = "^0.35.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true # Ensures all functions are typed
