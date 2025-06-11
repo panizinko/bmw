@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Message(BaseModel):
@@ -30,3 +30,11 @@ class UserPublic(BaseModel):
     email: EmailStr
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SignInResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
