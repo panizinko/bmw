@@ -14,6 +14,7 @@ client = TestClient(app)
 def clear_user_db():
     """Ensures the in-memory user database is empty before each test."""
     users.fake_db.clear()
+    client.cookies.clear()
 
 
 def test_login_success():
@@ -35,11 +36,13 @@ def test_login_success():
     response = client.post("/api/v1/auth/token", data=login_payload)
 
     assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.cookies
+
     data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-    assert "user" in data
-    assert data["user"]["email"] == "testlogin@example.com"
+
+    assert data["email"] == "testlogin@example.com"
+    assert data["name"] == "testlogin"
+    assert "id" in data
 
 
 def test_login_wrong_password_fails():
@@ -76,3 +79,28 @@ def test_login_nonexistent_user_fails():
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json()["detail"] == "Incorrect email or password"
+
+
+def test_logout_success():
+    """
+    Tests that a user can successfully log out and clear the access token cookie.
+    """
+    user_payload = {
+        "name": "testlogout",
+        "email": "testlogout@example.com",
+        "password": "password123",
+    }
+    client.post("/api/v1/users", json=user_payload)
+
+    login_payload = {
+        "username": "testlogout@example.com",
+        "password": "password123",
+    }
+
+    response = client.post("/api/v1/auth/token", data=login_payload)
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.cookies
+
+    logout_response = client.post("/api/v1/auth/logout")
+    assert logout_response.status_code == status.HTTP_200_OK
+    assert "access_token" not in client.cookies

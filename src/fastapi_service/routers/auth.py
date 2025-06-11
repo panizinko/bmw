@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from fastapi_service.config import settings
@@ -10,15 +10,17 @@ from fastapi_service.security import create_access_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+ACCESS_TOKEN_COOKIE_NAME = "access_token"
+
 
 def get_user_by_email(db: dict[str, UserInDB], email: str) -> UserInDB | None:
     """Helper function to find a user by email."""
     return next((user for user in db.values() if user.email == email), None)
 
 
-@router.post("/token", response_model=SignInResponse)
+@router.post("/token", response_model=UserPublic)
 def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    response: Response, form_data: OAuth2PasswordRequestForm = Depends()
 ) -> SignInResponse:
     """
     Login for access token.
@@ -36,6 +38,21 @@ def login_for_access_token(
         data={"sub": user.id}, expires_delta=access_token_expires
     )
 
-    user_public = UserPublic.model_validate(user)
+    response.set_cookie(
+        key=ACCESS_TOKEN_COOKIE_NAME,
+        value=access_token,
+        httponly=True,  # Makes it inaccessible to JavaScript
+        samesite="lax",  # Helps prevent CSRF
+        secure=False,  # Set to True in production (requires HTTPS)
+    )
 
-    return SignInResponse(access_token=access_token, user=user_public)
+    return UserPublic.model_validate(user)
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """
+    Logs the user out by clearing the access token cookie.
+    """
+    response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME)
+    return {"status": "ok", "message": "Successfully logged out"}
