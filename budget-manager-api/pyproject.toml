@@ -1,0 +1,59 @@
+[project]
+name = "budget_manager_api"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Adrian Zinko",email = "zinko.adrian00@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi (>=0.115.12,<0.116.0)",
+    "uvicorn (>=0.34.3,<0.35.0)",
+    "email-validator (>=2.2.0,<3.0.0)",
+    "bcrypt (>=4.3.0,<5.0.0)",
+    "python-jose[cryptography] (>=3.5.0,<4.0.0)",
+    "pydantic-settings (>=2.9.1,<3.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "structlog (>=25.4.0,<26.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "budget_manager_api", from = "src"}]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+mypy_path = "src"
+
+[tool.ruff]
+src = ["src"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.poe.tasks]
+test = "pytest"
+lint = "ruff check ."
+format = "ruff format ."
+
+[tool.poe.tasks.dev]
+cmd = "uvicorn budget_manager_api.main:app --reload"
+cwd = "src"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.0"
+mypy = "^1.16.0"
+httpx = "^0.28.1"
+ruff = "^0.11.13"
+poethepoet = "^0.35.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
