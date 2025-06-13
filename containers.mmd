@@ -1,0 +1,42 @@
+---
+id: b069c880-dd78-4f3d-a583-c282ae7c1f4d
+---
+graph TD
+    subgraph "Local Machine"
+        A[Host Machine] --> B{Code Editor};
+        A --> C{Terminal};
+        C -- "docker-compose watch" --> D[Docker Engine];
+    end
+
+    subgraph "Docker Environment (Managed by Docker Compose)"
+        D --> E(budget-manager-network);
+
+        subgraph "Frontend Service"
+            F[Angular Container]
+            F -- Port 4200 --> A;
+            F -- "/api" proxy --> G;
+        end
+
+        subgraph "Backend Service"
+            G[FastAPI Container]
+            G -- Port 8000 --> A;
+            G -- Connects to --> H;
+        end
+
+        subgraph "Database Service"
+            H[Postgres Container]
+            H -- Port 5432 --> I;
+            I[pgAdmin Container]
+            I -- Port 5050 --> A;
+        end
+
+        E --- F;
+        E --- G;
+        E --- H;
+        E --- I;
+    end
+
+    subgraph "Testing Workflow (Local)"
+        C -- "poetry run poe test" --> J[Pytest];
+        J -- Connects to --> H;
+    end
