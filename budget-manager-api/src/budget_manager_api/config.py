@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,10 +8,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_COOKIE_NAME: str
     REFRESH_TOKEN_EXPIRE_DAYS: int
     REFRESH_TOKEN_COOKIE_NAME: str
+    DATABASE_URL: str
 
     IN_PRODUCTION: bool = False
 
-    model_config = SettingsConfigDict()
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()

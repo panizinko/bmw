@@ -1,10 +1,7 @@
-from budget_manager_api.main import app
 from fastapi.testclient import TestClient
 
-client = TestClient(app)
 
-
-def test_read_root():
+def test_read_root(client: TestClient):
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Hello, World!"}
+    assert response.json() == {"message": "Welcome to the Budget Manager API"}

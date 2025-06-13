@@ -1,23 +1,8 @@
-import pytest
-from budget_manager_api.main import app
-from budget_manager_api.routers import users
 from fastapi import status
 from fastapi.testclient import TestClient
 
-client = TestClient(app)
 
-
-@pytest.fixture(autouse=True)
-def clear_fake_db():
-    """
-    A fixture to clear our in-memory database before each test.
-    This ensures test isolation.
-    """
-    users.fake_db.clear()
-    client.cookies.clear()
-
-
-def test_get_me_unauthenticated():
+def test_get_me_unauthenticated(client: TestClient):
     """
     Tests that accessing /me without a token fails with 401.
     """
@@ -25,7 +10,7 @@ def test_get_me_unauthenticated():
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_get_me_with_invalid_token():
+def test_get_me_with_invalid_token(client: TestClient):
     """
     Tests that accessing /me with a malformed token fails with 401.
     """
@@ -34,7 +19,7 @@ def test_get_me_with_invalid_token():
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_user_with_valid_token():
+def test_user_with_valid_token(client: TestClient):
     """
     Tests the full flow: sign up, log in (which sets the cookie),
     and then access the protected /me endpoint.

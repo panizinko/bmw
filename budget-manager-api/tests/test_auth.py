@@ -1,22 +1,8 @@
-# tests/test_auth.py
-
-import pytest
-from budget_manager_api.main import app
-from budget_manager_api.routers import users
 from fastapi import status
 from fastapi.testclient import TestClient
 
-client = TestClient(app)
 
-
-@pytest.fixture(autouse=True)
-def clear_user_db():
-    """Ensures the in-memory user database is empty before each test."""
-    users.fake_db.clear()
-    client.cookies.clear()
-
-
-def test_login_success():
+def test_login_success(client: TestClient):
     """
     Tests that a user can successfully log in with correct credentials
     and receive a valid token and user data.
@@ -26,14 +12,16 @@ def test_login_success():
         "email": "testlogin@example.com",
         "password": "password123",
     }
-    client.post("/api/v1/users", json=user_payload)
+
+    create_response = client.post("/api/v1/users", json=user_payload)
+    assert create_response.status_code == status.HTTP_201_CREATED
 
     login_payload = {
         "username": "testlogin@example.com",
         "password": "password123",
     }
-    response = client.post("/api/v1/auth/token", data=login_payload)
 
+    response = client.post("/api/v1/auth/token", data=login_payload)
     assert response.status_code == status.HTTP_200_OK
     assert "access_token" in response.cookies
 
@@ -44,7 +32,7 @@ def test_login_success():
     assert "id" in data
 
 
-def test_login_wrong_password_fails():
+def test_login_wrong_password_fails(client: TestClient):
     """
     Tests that a login attempt with an incorrect password fails.
     """
@@ -62,11 +50,10 @@ def test_login_wrong_password_fails():
     response = client.post("/api/v1/auth/token", data=login_payload)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    data = response.json()
-    assert data["detail"] == "Incorrect email or password"
+    assert response.json()["detail"] == "Incorrect email or password"
 
 
-def test_login_nonexistent_user_fails():
+def test_login_nonexistent_user_fails(client: TestClient):
     """
     Tests that a login attempt for a user that does not exist fails.
     """
@@ -80,7 +67,7 @@ def test_login_nonexistent_user_fails():
     assert response.json()["detail"] == "Incorrect email or password"
 
 
-def test_logout_success():
+def test_logout_success(client: TestClient):
     """
     Tests that a user can successfully log out and clear the access token cookie.
     """
@@ -89,7 +76,9 @@ def test_logout_success():
         "email": "testlogout@example.com",
         "password": "password123",
     }
-    client.post("/api/v1/users", json=user_payload)
+
+    create_response = client.post("/api/v1/users", json=user_payload)
+    assert create_response.status_code == status.HTTP_201_CREATED
 
     login_payload = {
         "username": "testlogout@example.com",
@@ -102,4 +91,6 @@ def test_logout_success():
 
     logout_response = client.post("/api/v1/auth/logout")
     assert logout_response.status_code == status.HTTP_200_OK
+
     assert "access_token" not in client.cookies
+    assert "refresh_token" not in client.cookies

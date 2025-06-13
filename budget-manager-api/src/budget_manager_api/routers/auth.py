@@ -3,10 +3,13 @@ from datetime import timedelta
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from budget_manager_api.config import settings
+from budget_manager_api.db_schema import users_table
+from budget_manager_api.dependencies import get_db_session
 from budget_manager_api.models import SignInResponse, UserInDB, UserPublic
-from budget_manager_api.routers.users import fake_db
 from budget_manager_api.security import (
     create_access_token,
     create_refresh_token,
@@ -21,18 +24,25 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 def get_user_by_email(db: dict[str, UserInDB], email: str) -> UserInDB | None:
     """Helper function to find a user by email."""
-    return next((user for user in db.values() if user.email == email), None)
+    query = select(users_table).where(users_table.c.email == email)
+    result = db.execute(query).first()
+
+    if result:
+        return UserInDB.model_validate(result, from_attributes=True)
+    return None
 
 
 @router.post("/token", response_model=UserPublic)
 def login_for_access_token(
-    response: Response, form_data: OAuth2PasswordRequestForm = Depends()
+    response: Response,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db_session),
 ) -> SignInResponse:
     """
     Login for access token.
     """
     logger.info("Login for access token", form_data=form_data)
-    user = get_user_by_email(fake_db, form_data.username)
+    user = get_user_by_email(db, form_data.username)
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         logger.warning("Invalid credentials", form_data=form_data)
@@ -83,7 +93,9 @@ def login_for_access_token(
 
 
 @router.post("/refresh")
-def refresh_access_token(request: Request, response: Response):
+def refresh_access_token(
+    request: Request, response: Response, db: Session = Depends(get_db_session)
+):
     """
     Refresh the access token.
     """
@@ -104,7 +116,8 @@ def refresh_access_token(request: Request, response: Response):
             detail="Invalid refresh token",
         )
     user_id = payload["sub"]
-    user = fake_db.get(user_id)
+
+    user = get_user_by_email(db, user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"

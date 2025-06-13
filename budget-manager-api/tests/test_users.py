@@ -1,22 +1,8 @@
-import pytest
-from budget_manager_api.main import app
-from budget_manager_api.routers import users
 from fastapi import status
 from fastapi.testclient import TestClient
 
-client = TestClient(app)
 
-
-@pytest.fixture(autouse=True)
-def clear_fake_db():
-    """
-    A fixture to clear our in-memory database before each test.
-    This ensures test isolation.
-    """
-    users.fake_db.clear()
-
-
-def test_create_user_success():
+def test_create_user_success(client: TestClient):
     response = client.post(
         "/api/v1/users",
         json={
@@ -35,7 +21,7 @@ def test_create_user_success():
     assert "hashed_password" not in data
 
 
-def test_create_user_already_exists():
+def test_create_user_already_exists(client: TestClient):
     user_payload = {
         "name": "testuser",
         "email": "testuser@example.com",
@@ -50,6 +36,4 @@ def test_create_user_already_exists():
 
     assert response2.status_code == status.HTTP_409_CONFLICT
 
-    data = response2.json()
-
-    assert data["detail"] == "User with this email already exists"
+    assert response2.json()["detail"] == "User with this email already exists"

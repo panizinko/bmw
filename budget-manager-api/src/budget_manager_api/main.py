@@ -1,31 +1,42 @@
-from budget_manager_api.models import Message
-from budget_manager_api.routers import auth, users
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from budget_manager_api.logging_config import setup_logging
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-setup_logging()
-
-app = FastAPI(title="Budget Planner API")
+from .config import settings
+from .logging_config import setup_logging
+from .models import Message
+from .routers import auth, users
 
 API_PREFIX = "/api/v1"
 
-origins = [
-    "http://localhost:4200",
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def create_app() -> FastAPI:
+    setup_logging()
+    app = FastAPI(title="Budget Manager API")
 
-app.include_router(users.router, prefix=API_PREFIX)
-app.include_router(auth.router, prefix=API_PREFIX)
+    origins = ["http://localhost:4200"]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.include_router(users.router, prefix=API_PREFIX)
+    app.include_router(auth.router, prefix=API_PREFIX)
+
+    @app.get("/", response_model=Message, tags=["Root"])
+    def read_root() -> Message:
+        return Message(message="Welcome to the Budget Manager API")
+
+    engine = create_engine(settings.DATABASE_URL, echo=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    app.state.db_session_factory = SessionLocal
+
+    return app
 
 
-@app.get("/", response_model=Message, tags=["root"])
-def read_root() -> Message:
-    return Message(message="Hello, World!")
+app = create_app()
