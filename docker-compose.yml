@@ -44,8 +44,15 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      - ./budget-manager-api/src:/app/src
+    develop:
+      watch:
+        - path: ./budget-manager-api/pyproject.toml
+          action: rebuild
+        - path: ./budget-manager-api/poetry.lock
+          action: rebuild
+        - path: ./budget-manager-api/src
+          target: /app/src
+          action: sync
     env_file:
       - .env
     networks:
@@ -54,7 +61,6 @@ services:
       - postgres
       - pgadmin
     restart: unless-stopped
-    command: uvicorn budget_manager_api.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     container_name: budget-manager-frontend
