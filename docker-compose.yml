@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: budget-manager-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-db:/docker-entrypoint-initdb.d
+    networks:
+      - budget-manager-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:9.4
+    container_name: budget-manager-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+    networks:
+      - budget-manager-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  backend:
+    container_name: budget-manager-backend
+    build:
+      context: ./budget-manager-api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./budget-manager-api/src:/app/src
+    env_file:
+      - .env
+    networks:
+      - budget-manager-network
+    depends_on:
+      - postgres
+      - pgadmin
+    restart: unless-stopped
+
+  frontend:
+    container_name: budget-manager-frontend
+    build:
+      context: ./budget-manager-client
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./budget-manager-client:/app
+      - /app/node_modules
+    networks:
+      - budget-manager-network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  budget-manager-network:
+    driver: bridge

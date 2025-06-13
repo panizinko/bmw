@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Budget_Manager_DB",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "budget_planner_db",
+      "Username": "budget_planner_db",
+      "SSLMode": "prefer",
+      "PassFile": "/tmp/pgpassfile"
+    }
+  }
+}
