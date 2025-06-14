@@ -3,23 +3,46 @@
 from pathlib import Path
 
 import pytest
-from dotenv import dotenv_values
 from fastapi.testclient import TestClient
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from budget_manager_api.config import Settings
 from budget_manager_api.db_schema import metadata
 from budget_manager_api.dependencies import get_db_session
 from budget_manager_api.main import create_app
 
+
+class TestSettings(Settings):
+    """
+    Test-specific settings that prioritize .env.test over environment
+    variables for local testing, while allowing environment variables to be
+    used in CI.
+    """
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return init_settings, dotenv_settings, env_settings, file_secret_settings
+
+
 env_path = Path(__file__).parent.parent / ".env.test"
 
-test_env_vars = dotenv_values(env_path)
+test_settings = TestSettings(_env_file=env_path)
 
-TEST_DATABASE_URL = test_env_vars.get("DATABASE_URL")
+TEST_DATABASE_URL = test_settings.DATABASE_URL
 
 if not TEST_DATABASE_URL:
-    raise ValueError(f"DATABASE_URL not found in {env_path}. Please check the file.")
+    raise ValueError(
+        "DATABASE_URL not found. Please set it in .env.test or as an environment variable."
+    )
 
 engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
