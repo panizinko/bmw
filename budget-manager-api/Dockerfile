@@ -25,6 +25,9 @@ COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/src"
 
+COPY alembic.ini .
+COPY alembic ./alembic
+
 # Copy our application source code
 COPY ./src ./src
 

@@ -45,6 +45,12 @@ test = "pytest"
 lint = "ruff check ."
 format = "ruff format ."
 
+# This task generates a new migration file.
+db_migrate = "docker-compose exec backend alembic revision --autogenerate -m"
+
+# This task applies the migrations.
+db_upgrade = "docker-compose exec backend alembic upgrade head"
+
 [tool.poe.tasks.dev]
 cmd = "uvicorn budget_manager_api.main:app --reload"
 cwd = "src"

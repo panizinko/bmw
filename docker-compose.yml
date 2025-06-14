@@ -43,12 +43,15 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    volumes:
+      - ./budget-manager-api/alembic:/app/alembic
     develop:
       watch:
-        - path: ./budget-manager-api/pyproject.toml
-          action: rebuild
-        - path: ./budget-manager-api/poetry.lock
-          action: rebuild
+        # Commented out to avoid rebuilding the container on changes to pyproject.toml and poetry.lock for now
+        # - path: ./budget-manager-api/pyproject.toml
+        #   action: rebuild
+        # - path: ./budget-manager-api/poetry.lock
+        #   action: rebuild
         - path: ./budget-manager-api/src
           target: /app/src
           action: sync
@@ -57,8 +60,10 @@ services:
     networks:
       - budget-manager-network
     depends_on:
-      - postgres
-      - pgadmin
+      postgres:
+        condition: service_healthy
+      pgadmin:
+        condition: service_started
     restart: unless-stopped
 
   frontend:

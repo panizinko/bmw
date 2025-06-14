@@ -1,8 +1,8 @@
+import os
 from logging.config import fileConfig
-from pathlib import Path
 
 from alembic import context
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
 from budget_manager_api.db_schema import metadata
@@ -11,23 +11,18 @@ from budget_manager_api.db_schema import metadata
 # access to the values within the .ini file in use.
 config = context.config
 
-env_path = Path(__file__).parent.parent / ".env.alembic"
+load_dotenv()
 
-test_env_vars = dotenv_values(env_path)
-
-DATABASE_URL = test_env_vars.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError(f"DATABASE_URL not found in {env_path}. Please check the file.")
-
-print("DATABASE_URL", DATABASE_URL)
+    raise ValueError("DATABASE_URL not found in .env. Please check the file.")
 
 # Set the sqlalchemy.url from the loaded environment
 config.set_main_option(
     "sqlalchemy.url",
     DATABASE_URL,
 )
-
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

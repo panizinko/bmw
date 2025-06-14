@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Index,
@@ -38,5 +39,6 @@ users_table = Table(
         onupdate=func.now(),
         nullable=False,
     ),
+    Column("is_active", Boolean, default=True, nullable=False),
     Index("idx_users_email", "email"),
 )
